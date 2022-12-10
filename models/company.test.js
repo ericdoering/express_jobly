@@ -2,6 +2,7 @@
 
 const db = require("../db.js");
 const { BadRequestError, NotFoundError } = require("../expressError");
+const { getSpecificCompanies } = require("./company.js");
 const Company = require("./company.js");
 const {
   commonBeforeAll,
@@ -31,7 +32,7 @@ describe("create", function () {
     expect(company).toEqual(newCompany);
 
     const result = await db.query(
-          `SELECT handle, name, description, num_employees, logo_url
+      `SELECT handle, name, description, num_employees, logo_url
            FROM companies
            WHERE handle = 'new'`);
     expect(result.rows).toEqual([
@@ -129,7 +130,7 @@ describe("update", function () {
     });
 
     const result = await db.query(
-          `SELECT handle, name, description, num_employees, logo_url
+      `SELECT handle, name, description, num_employees, logo_url
            FROM companies
            WHERE handle = 'c1'`);
     expect(result.rows).toEqual([{
@@ -156,7 +157,7 @@ describe("update", function () {
     });
 
     const result = await db.query(
-          `SELECT handle, name, description, num_employees, logo_url
+      `SELECT handle, name, description, num_employees, logo_url
            FROM companies
            WHERE handle = 'c1'`);
     expect(result.rows).toEqual([{
@@ -193,7 +194,7 @@ describe("remove", function () {
   test("works", async function () {
     await Company.remove("c1");
     const res = await db.query(
-        "SELECT handle FROM companies WHERE handle='c1'");
+      "SELECT handle FROM companies WHERE handle='c1'");
     expect(res.rows.length).toEqual(0);
   });
 
@@ -204,5 +205,62 @@ describe("remove", function () {
     } catch (err) {
       expect(err instanceof NotFoundError).toBeTruthy();
     }
+  });
+});
+
+/************************************ getspecific */
+
+describe("get specific function", function () {
+  test("get specific handles (1 company)", async function () {
+    let company = await Company.getSpecificCompanies("c2", 0, 30);
+    expect(company).toEqual([{
+      handle: "c2",
+      name: "C2",
+      description: "Desc2",
+      num_employees: 2,
+      logo_url: "http://c2.img",
+    }]);
+  })
+  test("get specific handles (2 companies)", async function () {
+    let company = await Company.getSpecificCompanies("c", 0, 2);
+    expect(company).toEqual([
+      {
+        handle: "c1",
+        name: "C1",
+        description: "Desc1",
+        num_employees: 1,
+        logo_url: "http://c1.img",
+      },
+      {
+        handle: "c2",
+        name: "C2",
+        description: "Desc2",
+        num_employees: 2,
+        logo_url: "http://c2.img",
+      }]);
+  })
+    test("minimum employees are higher than maximum employees", async function () {
+      try {
+        await Company.getSpecificCompanies("c2", 10, 0);
+        fail();
+      } catch (err) {
+        expect(err instanceof BadRequestError).toBeTruthy();
+      }
+  })
+    test("no handle found error", async function () {
+      try {
+        await Company.getSpecificCompanies("A", 0, 100);
+        fail();
+      } catch (err) {
+        expect(err instanceof NotFoundError).toBeTruthy();
+      }
+  });
+    test("number of employees not within search range", async function () {
+      try {
+        await Company.getSpecificCompanies("c2", 5, 10);
+        fail();
+      } catch (err) {
+        expect(err instanceof NotFoundError).toBeTruthy();
+      }
   });
 });

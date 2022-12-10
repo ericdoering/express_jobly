@@ -87,6 +87,25 @@ class Company {
     return company;
   }
 
+
+  static async getSpecificCompanies(handle, minEmployees, maxEmployees){
+    if(minEmployees >= maxEmployees){
+      throw new BadRequestError(`The minimum number of employees cannot be larger than maximum number of employees.`)
+    }
+
+      const companyRes = await db.query(`SELECT handle, 
+            name, 
+            description, 
+            num_employees, 
+            logo_url  
+            FROM companies WHERE handle LIKE $1 AND num_employees BETWEEN $2 AND $3`, [`%${handle.toLowerCase()}%`, minEmployees, maxEmployees]);
+
+          const company = companyRes.rows;
+
+          if (!company[0]) throw new NotFoundError(`No company: ${handle}`)
+
+          return company;
+  }
   /** Update company data with `data`.
    *
    * This is a "partial update" --- it's fine if data doesn't contain all the
@@ -98,6 +117,7 @@ class Company {
    *
    * Throws NotFoundError if not found.
    */
+
 
   static async update(handle, data) {
     const { setCols, values } = sqlForPartialUpdate(

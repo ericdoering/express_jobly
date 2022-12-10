@@ -227,3 +227,57 @@ describe("DELETE /companies/:handle", function () {
     expect(resp.statusCode).toEqual(404);
   });
 });
+
+/*********************************** GET /copmanies/Get Specific Companies */
+
+describe("GET /companies?handle=handle&minEmployees=num&maxEmployees=num", function () {
+  test("searching specific handle with all company sizes", async function () {
+    const resp = await request(app).get("/companies?handle=c1&minEmployees=0&maxEmployees=4");
+    expect(resp.body).toEqual({
+      companies:
+          [
+            {
+              handle: "c1",
+              name: "C1",
+              description: "Desc1",
+              num_employees: 1,
+              logo_url: "http://c1.img",
+            },
+          ],
+    })
+  })
+  test("searching specific handle with all company sizes", async function () {
+    const resp = await request(app).get("/companies?handle=c&minEmployees=2&maxEmployees=3");
+    expect(resp.body).toEqual({
+      companies:
+          [
+            {
+              handle: "c2",
+              name: "C2",
+              description: "Desc2",
+              num_employees: 2,
+              logo_url: "http://c2.img",
+            },
+            {
+              handle: "c3",
+              name: "C3",
+              description: "Desc3",
+              num_employees: 3,
+              logo_url: "http://c3.img",
+            },
+          ]
+    })
+  })
+    test("not company found for specific handle name", async function () {
+      const resp = await request(app).get(`/companies?handle=AA&minEmployees=0&maxEmployees=3`);
+      expect(resp.statusCode).toEqual(404);
+    });
+    test("not company found for specific employee range", async function () {
+      const resp = await request(app).get(`/companies?handle=c&minEmployees=5&maxEmployees=10`);
+      expect(resp.statusCode).toEqual(400);
+    });
+    test("minimum number of employees is larger than maximum number of employees", async function () {
+      const resp = await request(app).get(`/companies?handle=c&minEmployees=3&maxEmployees=0`);
+      expect(resp.statusCode).toEqual(400);
+    });
+});
