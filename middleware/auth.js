@@ -29,12 +29,36 @@ function authenticateJWT(req, res, next) {
 }
 
 
-function ensureAdmin(req, res, next){
-  if(!req.user || req.user.type !== "admin"){
-    throw new UnauthorizedError();
+function authenticateAdmin(req, res, next) {
+  try {
+    console.log(req.body)
+    const user = res.locals.user;
+    if (!user["isAdmin"]) {
+      throw new UnauthorizedError();
+    }
+    return next();
+  } catch (err) {
+      throw new UnauthorizedError();
   }
-  return next();
 }
+
+
+// function authenticateCurrentUser(req, res, next) {
+//   try {
+//     const authHeader = req.headers && req.headers.authorization;
+//     if (authHeader) {
+//       const token = authHeader.replace(/^[Bb]earer /, "").trim();
+//       const tokenData = jwt.verify(token, SECRET_KEY);
+//       const user = res.locals.user;
+//       if (user['username'] != tokenData['username']) {
+//         throw new UnauthorizedError('Unauthorized Request')
+//       }
+//     }
+//     return next();
+//   } catch (err) {
+//     return next();
+//   }
+// }
 /** Middleware to use when they must be logged in.
  *
  * If not, raises Unauthorized.
@@ -53,5 +77,6 @@ function ensureLoggedIn(req, res, next) {
 module.exports = {
   authenticateJWT,
   ensureLoggedIn,
-  ensureAdmin
+  authenticateAdmin,
+  //authenticateCurrentUser
 };
