@@ -26,8 +26,6 @@ const router = new express.Router();
 router.post("/", ensureLoggedIn, authenticateAdmin)
 router.post("/", async function (req, res, next) {
   try {
-    console.log(req.body)
-    console.log(req)
     const validator = jsonschema.validate(req.body, companyNewSchema);
     if (!validator.valid) {
       const errs = validator.errors.map(e => e.stack);

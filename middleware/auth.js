@@ -31,7 +31,6 @@ function authenticateJWT(req, res, next) {
 
 function authenticateAdmin(req, res, next) {
   try {
-    console.log(req.body)
     const user = res.locals.user;
     if (!user["isAdmin"]) {
       throw new UnauthorizedError();

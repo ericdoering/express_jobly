@@ -115,6 +115,40 @@ class User {
     return result.rows;
   }
 
+  /** Find all users with jobs they applied to.
+   *
+   * Returns [{ username, first_name, last_name, email, is_admin, jobs: [...jobId] }, ...]
+   **/
+
+  static async findAllWithJobs() {
+    const result = await db.query(
+          `SELECT users.username,
+                  first_name AS "firstName",
+                  last_name AS "lastName",
+                  email,
+                  is_admin AS "isAdmin",
+                  job_id as "jobID"
+           FROM users
+           FULL OUTER JOIN applications
+           on users.username = applications.username
+           ORDER BY username`,
+    );
+    const usersByName = {}
+    for( var row of result.rows) {
+      const username = row['username'];
+      if (usersByName[username]) {
+        usersByName[username]['jobs'].push(row['jobID'])
+      }
+      else {
+        const {username, firstName, lastName, email, isAdmin, jobID} = row;
+        const jobs = jobID ? [jobID] : [];
+        usersByName[username] = {username, firstName, lastName, email, isAdmin, jobs}
+      }
+    }
+
+    return Object.values(usersByName);
+  }
+
   /** Given a username, return data about user.
    *
    * Returns { username, first_name, last_name, is_admin, jobs }
@@ -140,6 +174,41 @@ class User {
     if (!user) throw new NotFoundError(`No user: ${username}`);
 
     return user;
+  }
+
+  /** Given a username, return data about user.
+   *
+   * Returns { username, first_name, last_name, is_admin, jobs }
+   *   where jobs is { id, title, company_handle, company_name, state }
+   *
+   * Throws NotFoundError if user not found.
+   **/
+
+  static async getWithJobs(username) {
+    const userRes = await db.query(
+          `SELECT username,
+                  first_name AS "firstName",
+                  last_name AS "lastName",
+                  email,
+                  is_admin AS "isAdmin"
+           FROM users
+           WHERE username = $1`,
+        [username],
+    );
+
+    const jobsRes = await db.query(
+      `SELECT job_id
+       FROM applications
+       WHERE username = $1`,
+    [username],
+  );
+
+
+    const user = userRes.rows[0];
+
+    if (!user) throw new NotFoundError(`No user: ${username}`);
+
+    return {...user, jobs: jobsRes.rows};
   }
 
   /** Update user data with `data`.
@@ -204,7 +273,41 @@ class User {
 
     if (!user) throw new NotFoundError(`No user: ${username}`);
   }
+
+  static async apply(
+      { username, jobID }) {
+    const duplicateCheck = await db.query(
+          `SELECT *
+          FROM applications
+          WHERE username = $1 AND job_id = $2`,
+        [username, jobID],
+    );
+
+    if (duplicateCheck.rows[0]) {
+      throw new BadRequestError(`User has already applied to this job.`);
+    }
+
+
+    const result = await db.query(
+          `INSERT INTO applications
+          (username,
+            job_id)
+          VALUES ($1, $2)
+          RETURNING username, job_id as "jobID"`,
+        [
+          username,
+          jobID,
+        ],
+    );
+
+    const application = result.rows[0];
+
+    return application;
+  }
 }
+
+
+
 
 
 module.exports = User;

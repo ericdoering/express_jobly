@@ -53,7 +53,7 @@ router.post("/", ensureLoggedIn, async function (req, res, next) {
 
 router.get("/", ensureLoggedIn, async function (req, res, next) {
   try {
-    const users = await User.findAll();
+    const users = await User.findAllWithJobs();
     return res.json({ users });
   } catch (err) {
     return next(err);
@@ -63,14 +63,14 @@ router.get("/", ensureLoggedIn, async function (req, res, next) {
 
 /** GET /[username] => { user }
  *
- * Returns { username, firstName, lastName, isAdmin }
+ * Returns { username, firstName, lastName, isAdmin, jobs: [...jobID] }
  *
  * Authorization required: login
  **/
 
 router.get("/:username", ensureLoggedIn, async function (req, res, next) {
   try {
-    const user = await User.get(req.params.username);
+    const user = await User.getWithJobs(req.params.username);
     return res.json({ user });
   } catch (err) {
     return next(err);
@@ -117,6 +117,21 @@ router.delete("/:username", ensureLoggedIn, async function (req, res, next) {
     return next(err);
   }
 });
+
+router.post("/:username/jobs/:id", ensureLoggedIn, async function (req, res, next) {
+  try {
+    const username  = req.params.username;
+    const jobID = req.params.id; 
+    const application = await User.apply({username, jobID})
+
+    return res.json({ applied: application.jobID });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+
+
 
 
 module.exports = router;
